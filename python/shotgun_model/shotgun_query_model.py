@@ -1000,13 +1000,14 @@ class ShotgunQueryModel(QtGui.QStandardItemModel):
         self._log_debug("Updating data model with new shotgun data...")
         modified_items = self._data_handler.update_data(sg_data)
 
-        self._log_debug(
-            "ShotGrid data contained %d modifications" % len(modified_items)
-        )
+        if modified_items:
+            self._log_debug(
+                "ShotGrid data contained %d modifications" % len(modified_items)
+            )
 
-        if len(modified_items) > 0:
-            # save cache changes to disk in the background
-            self._sg_data_retriever.execute_method(self.__save_data_async)
+            if len(modified_items) > 0:
+                # save cache changes to disk in the background
+                self._sg_data_retriever.execute_method(self.__save_data_async)
 
         root = self.invisibleRootItem()
         if root.rowCount() == 0:
@@ -1024,73 +1025,75 @@ class ShotgunQueryModel(QtGui.QStandardItemModel):
 
             # we have some items loaded into our qt model. Look at the diff
             # and make sure that what's loaded in the model is up to date.
-            for item in modified_items:
-                data_item = item["data"]
+            if modified_items is not None:
+                for item in modified_items:
+                    data_item = item["data"]
 
-                self._log_debug("Processing change %s" % item)
+                    self._log_debug("Processing change %s" % item)
 
-                if item["mode"] == self._data_handler.ADDED:
-                    # look for the parent of this item
-                    parent_data_item = data_item.parent
-                    if parent_data_item is None:
-                        # item is parented under the root
-                        parent_model_item = self.invisibleRootItem()
-                    else:
-                        # this item has a well defined parent
-                        # see if this exists in the tree
-                        parent_model_item = self._get_item_by_unique_id(
-                            parent_data_item.unique_id
-                        )
-
-                    if parent_model_item:
-                        # The parent exists in the view. It might not because
-                        # of lazy loading.
-                        # If its children were already populated we need to add
-                        # the new ones now. If not, we let fetchMore does its
-                        # job later in lazy loading mode.
-                        if not self.canFetchMore(parent_model_item.index()):
-                            self._log_debug(
-                                "Creating new model item for %s" % data_item
+                    if item["mode"] == self._data_handler.ADDED:
+                        # look for the parent of this item
+                        parent_data_item = data_item.parent
+                        if parent_data_item is None:
+                            # item is parented under the root
+                            parent_model_item = self.invisibleRootItem()
+                        else:
+                            # this item has a well defined parent
+                            # see if this exists in the tree
+                            parent_model_item = self._get_item_by_unique_id(
+                                parent_data_item.unique_id
                             )
-                            # Double check that the item we pulled from SG
-                            # was not already added by a fetchMore on the
-                            # model.
-                            # If it is the case, we just update the existing
-                            # item even, if in theory, it should already be
-                            # up to date.
-                            model_item = self._get_item_by_unique_id(
-                                data_item.unique_id
-                            )
-                            if model_item:
-                                self._log_debug(
-                                    "Updating existing model "
-                                    "item %s for create" % model_item
-                                )
-                                self._update_item(model_item, data_item)
-                            else:
-                                self._log_debug(
-                                    "Creating new model " "item for %s" % data_item
-                                )
-                                self._create_item(parent_model_item, data_item)
-                elif item["mode"] == self._data_handler.DELETED:
-                    # see if the node exists in the tree, in that case delete it.
-                    # we check if it exists in the model because it may not have been
-                    # loaded in yet by the deferred loader
-                    model_item = self._get_item_by_unique_id(data_item.unique_id)
-                    if model_item:
-                        self._log_debug("Deleting model subtree %s" % model_item)
-                        self._delete_item(model_item)
 
-                elif item["mode"] == self._data_handler.UPDATED:
-                    # see if the node exists in the tree, in that case update it with new info
-                    # we check if it exists in the model because it may not have been
-                    # loaded in yet by the deferred loader
-                    model_item = self._get_item_by_unique_id(data_item.unique_id)
-                    if model_item:
-                        self._log_debug("Updating model item %s" % model_item)
-                        self._update_item(model_item, data_item)
+                        if parent_model_item:
+                            # The parent exists in the view. It might not because
+                            # of lazy loading.
+                            # If its children were already populated we need to add
+                            # the new ones now. If not, we let fetchMore does its
+                            # job later in lazy loading mode.
+                            if not self.canFetchMore(parent_model_item.index()):
+                                self._log_debug(
+                                    "Creating new model item for %s" % data_item
+                                )
+                                # Double check that the item we pulled from SG
+                                # was not already added by a fetchMore on the
+                                # model.
+                                # If it is the case, we just update the existing
+                                # item even, if in theory, it should already be
+                                # up to date.
+                                model_item = self._get_item_by_unique_id(
+                                    data_item.unique_id
+                                )
+                                if model_item:
+                                    self._log_debug(
+                                        "Updating existing model "
+                                        "item %s for create" % model_item
+                                    )
+                                    self._update_item(model_item, data_item)
+                                else:
+                                    self._log_debug(
+                                        "Creating new model " "item for %s" % data_item
+                                    )
+                                    self._create_item(parent_model_item, data_item)
+                    elif item["mode"] == self._data_handler.DELETED:
+                        # see if the node exists in the tree, in that case delete it.
+                        # we check if it exists in the model because it may not have been
+                        # loaded in yet by the deferred loader
+                        model_item = self._get_item_by_unique_id(data_item.unique_id)
+                        if model_item:
+                            self._log_debug("Deleting model subtree %s" % model_item)
+                            self._delete_item(model_item)
 
-            self._log_debug("...diffs applied!")
+                    elif item["mode"] == self._data_handler.UPDATED:
+                        # see if the node exists in the tree, in that case update it with new info
+                        # we check if it exists in the model because it may not have been
+                        # loaded in yet by the deferred loader
+                        model_item = self._get_item_by_unique_id(data_item.unique_id)
+                        if model_item:
+                            # self._log_debug("Updating model item %s" % model_item)
+                            self._update_item(model_item, data_item)
+
+                self._log_debug("...diffs applied!")
 
         # and emit completion signal
-        self.data_refreshed.emit(len(modified_items) > 0)
+        if modified_items:
+            self.data_refreshed.emit(len(modified_items) > 0)

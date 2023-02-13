@@ -137,7 +137,7 @@ class ShotgunHierarchyModel(ShotgunQueryModel):
         text_color = QtGui.QApplication.palette().text().color()
 
         # local import to avoid doc generation issues
-        from ..utils import color_mix
+        from ..utils.color import color_mix
 
         self._empty_item_color = color_mix(text_color, 1, base_color, 2)
 

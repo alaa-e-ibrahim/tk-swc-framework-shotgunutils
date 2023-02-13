@@ -615,6 +615,9 @@ class ShotgunModel(ShotgunQueryModel):
         :returns: Model item
         :rtype: :class:`ShotgunStandardItem`
         """
+
+        # self._log_debug("_create_item: data item is {}:".format(data_item))
+        # self._log_debug("_create_item: parent is {}:".format(parent))
         # construct tree view node object
         item = ShotgunStandardItem()
         item.setEditable(data_item.field in self.__editable_fields)
