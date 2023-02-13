@@ -365,7 +365,7 @@ class ShotgunFindDataHandler(ShotgunDataHandler):
 
     def _get_peforce_data(self, sg_data):
         if sg_data:
-            if len(sg_data) <= 20:
+            if len(sg_data) <= 5:
                 sg_data = self._get_small_peforce_data(sg_data)
             else:
                 sg_data = self._get_large_peforce_data(sg_data)
